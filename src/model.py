@@ -1,47 +1,48 @@
 from tensorflow.keras.applications import ResNet50
-import tensorflow as tf
-from tensorflow.keras import layers, models,regularizers
-from tensorflow.keras.layers import Flatten,Dense,Dropout
+from tensorflow.keras import layers, models, regularizers
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.utils import plot_model
 from data import load_dataset
 
-def build_model():
-    # gpu_devices = tf.config.list_physical_devices('GPU')
-    base_model=ResNet50(
+def build_model(input_shape=(224,224,3), l2=1e-4, dropout_rate=0.5, classes=4, trainable_layers=4):
+    """
+    ResNet50 transfer learning model with partial fine-tuning.
+    Only the last `trainable_layers` are unfrozen.
+    """
+
+    base_model = ResNet50(
         weights='imagenet',
         include_top=False,
-        input_shape=(224,224,3)
+        input_shape=input_shape
     )
-    #plot_model(base_model,to_file='base_model_arch.png') i runned it once 
-    #freez the raining of the layers 
-    for layer in base_model.layers[-30:]:
-        layer.trainable=True
+    # Freeze all layers first
+    base_model.trainable = False
 
-    
-    model=models.Sequential([
-        layers.Resizing(224,224),
-        layers.Rescaling(1./255),
+    # Unfreeze only the last `trainable_layers`
+    for layer in base_model.layers[-trainable_layers:]:
+        layer.trainable = True
+
+    model = models.Sequential([
+        layers.Resizing(input_shape[0], input_shape[1]),
+        layers.Rescaling(1.0/255.0),
         base_model,
         layers.GlobalAveragePooling2D(),
-        layers.Dense(256, activation='relu',kernel_regularizer=regularizers.l2()
-),
-        layers.BatchNormalization(),
-        layers.Dropout(0.5),
-        layers.Dense(4, activation='softmax',dtype='float32') ,   
-        ])
+        Dense(256, activation='relu', kernel_regularizer=regularizers.l2(l2)),
+        BatchNormalization(),
+        Dropout(dropout_rate),
+        Dense(classes, activation='softmax', dtype='float32'),
+    ])
 
-    
     model.compile(
-        optimizer=Adam(learning_rate=0.0001),
+        optimizer=Adam(learning_rate=1e-5),
         loss='categorical_crossentropy',
         metrics=['accuracy']
     )
-    
+
     return model
 
 
-
 if __name__ == "__main__":
-    aug_ds, test_ds = load_dataset()
-    model=build_model()
+    train_ds, val_ds= load_dataset()
+    m = build_model(trainable_layers=6)  # try 4, 6, or 8
+    m.summary()
