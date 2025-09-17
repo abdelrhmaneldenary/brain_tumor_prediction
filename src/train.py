@@ -1,40 +1,56 @@
 from data import load_dataset
 from model import build_model
-from tensorflow.keras.callbacks import CSVLogger
-import tensorflow as tf
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
 import os
 
 def train():
-    
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    # os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"   # optional: show TF logs
-    # print("Physical GPUs:", tf.config.list_physical_devices('GPU'))
+    # Load datasets
+    train_ds, val_ds = load_dataset(batch_size=32)
 
-    # gpus = tf.config.list_physical_devices('GPU')
-    # if gpus:
-    #     try:
-    #         for g in gpus:
-    #             tf.config.experimental.set_memory_growth(g, True)
-    #         print("Enabled memory growth for GPUs")
-    #     except RuntimeError as e:
-    #         print("Could not set memory growth:", e)
+    # Build model
+    model = build_model(trainable_layers=6)
 
+    # --- Callbacks ---
+    # earlystop = EarlyStopping(
+    #     monitor="val_loss",
+    #     patience=3,
+    #     restore_best_weights=True,
+    #     verbose=1
+    # )
 
-    aug_ds, test_ds = load_dataset()
-    model = build_model()
+    checkpoint_path = os.path.join("..", "models", "best_resnet50.h5")
+    os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
 
-    # Create a CSVLogger to save metrics during training
-    csv_logger = CSVLogger("training_log.csv", append=False)
-
-    history = model.fit(
-        aug_ds,
-        validation_data=test_ds,
-        epochs=10,
-        callbacks=[csv_logger]
+    checkpoint = ModelCheckpoint(
+        checkpoint_path,
+        monitor="val_loss",
+        save_best_only=True,
+        save_weights_only=False,
+        verbose=1
     )
 
-    # Save trained model
-    model.save("models/resnet50_brain_tumor.h5")
+    log_file_path = os.path.join("..", "models", "training_log.csv")
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+
+    csv_logger = CSVLogger(log_file_path, append=False)
+
+    # --- Train model ---
+    history = model.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=20,
+        callbacks=[checkpoint, csv_logger]
+    )
+
+    # Evaluate on validation set
+    print("\n--- Final evaluation on validation set ---\n")
+    results = model.evaluate(val_ds)
+    print("Validation results (loss, accuracy):", results)
+
+    # Save final model
+    final_model_path = os.path.join("..", "models", "resnet50_brain_tumor.h5")
+    model.save(final_model_path)
+    print(f"\n✅ Model saved to {final_model_path}")
 
 if __name__ == "__main__":
     train()
