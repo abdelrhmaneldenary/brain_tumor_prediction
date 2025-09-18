@@ -44,5 +44,5 @@ def build_model(input_shape=(224,224,3), l2=1e-4, dropout_rate=0.5, classes=4, t
 
 if __name__ == "__main__":
     train_ds, val_ds= load_dataset()
-    m = build_model(trainable_layers=6)  # try 4, 6, or 8
+    m = build_model()  
     m.summary()

@@ -9,7 +9,7 @@ AUTOTUNE = tf.data.AUTOTUNE
 def load_dataset(batch_size=32, image_size=(224, 224), seed=123):
     # Download dataset
     dataset_path = kagglehub.dataset_download("masoudnickparvar/brain-tumor-mri-dataset")
-    print(dataset_path)
+    dataset_path=Path(dataset_path)
     train_dir = dataset_path / "Training"
     val_dir   = dataset_path / "Testing"   # your dataset's validation folder
 

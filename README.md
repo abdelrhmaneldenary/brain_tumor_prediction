@@ -62,9 +62,9 @@ Key training strategies:
 
 ## 📊 Results
 
-Best Validation Accuracy: 0.68
+Best Validation Accuracy: 98.4%
 
-Test Accuracy (on validation set): ~0.68
+Test Accuracy (on validation set): 97%
 
 (These may vary depending on training hardware & random seeds.)   
 

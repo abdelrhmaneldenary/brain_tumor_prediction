@@ -3,12 +3,12 @@ from model import build_model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
 import os
 
-def train():
+def train(epochs=20,trainable_layers=6):
     # Load datasets
     train_ds, val_ds = load_dataset(batch_size=32)
 
     # Build model
-    model = build_model(trainable_layers=6)
+    model = build_model(trainable_layers=trainable_layers)
 
     # --- Callbacks ---
     # earlystop = EarlyStopping(
@@ -29,7 +29,7 @@ def train():
         verbose=1
     )
 
-    log_file_path = os.path.join("..", "models", "training_log.csv")
+    log_file_path = os.path.join( "models", "training_log.csv")
     os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
 
     csv_logger = CSVLogger(log_file_path, append=False)
@@ -38,7 +38,7 @@ def train():
     history = model.fit(
         train_ds,
         validation_data=val_ds,
-        epochs=20,
+        epochs=epochs,
         callbacks=[checkpoint, csv_logger]
     )
 
@@ -48,9 +48,9 @@ def train():
     print("Validation results (loss, accuracy):", results)
 
     # Save final model
-    final_model_path = os.path.join("..", "models", "resnet50_brain_tumor.h5")
+    final_model_path = os.path.join( "models", "resnet50_brain_tumor.h5")
     model.save(final_model_path)
     print(f"\n✅ Model saved to {final_model_path}")
 
 if __name__ == "__main__":
-    train()
+    train(epochs=50,trainable_layers=200)
